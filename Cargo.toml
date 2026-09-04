@@ -1,18 +1,11 @@
-[package]
-name = "runar-os"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
+[workspace]
+members = [
+    "runar-firmware",
+    "runar-kernel"
+]
 
 [profile.dev]
 panic = "abort"
 
 [profile.release]
 panic = "abort"
-
-
-[[bin]]
-name = "runar-os"
-test = false
-bench = false

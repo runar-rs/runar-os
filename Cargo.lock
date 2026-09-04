@@ -3,5 +3,9 @@
 version = 4
 
 [[package]]
-name = "runar-os"
+name = "runar-firmware"
+version = "0.1.0"
+
+[[package]]
+name = "runar-kernel"
 version = "0.1.0"
