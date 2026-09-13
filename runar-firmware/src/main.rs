@@ -28,3 +28,8 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 
     }
 }
+
+
+unsafe extern "C" {
+    fn switch_to_supervisor(s_address: usize) -> !;
+}

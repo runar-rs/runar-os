@@ -71,12 +71,20 @@ impl ListNode {
 }
 
 pub struct FreeListAllocator {
+    /// Address of the [`ListNode`] of the first free block.
+    /// 
+    /// If 0, no free block is available.
     first_node: usize,
     start: usize,
     end: usize,
 }
 
 unsafe impl core::alloc::GlobalAlloc for FreeListAllocator {
+    /// Allocates memory for the given layout.
+    /// 
+    /// # Panics
+    /// If a node in the FreeListAllocator is invalid, alloc panics, because memory safety can't be
+    /// guaranteed.
     unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
         let mut current_node_addr: usize = self.first_node;
         let mut current_best_node_addr: usize = 0;
@@ -89,6 +97,7 @@ unsafe impl core::alloc::GlobalAlloc for FreeListAllocator {
                     current_node = &mut *(current_node_addr as *mut ListNode);
                 }
                 if !current_node.is_valid() {
+                    // The current node has a invalid check field.
                     panic!();
                 }
                 let aligned_addr = (current_node_addr + layout.align() - 1) & !(layout.align() - 1);
