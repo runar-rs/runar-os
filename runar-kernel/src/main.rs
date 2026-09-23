@@ -6,7 +6,10 @@ use crate::bootinfo::BootInfo;
 
 pub mod bootinfo;
 
+pub mod arch;
 pub mod memory;
+pub mod process;
+
 /// Start of the kernel. Should be only called on the primary hart, hart 0.
 #[unsafe(no_mangle)]
 pub extern "C" fn _start(info: &BootInfo) -> ! {
