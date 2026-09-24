@@ -6,8 +6,10 @@ pub extern "C" fn trap_handler() -> ! {
     let context = CpuContext::new();
 
     let scause: usize;
+    let stval: usize;
     unsafe {
         core::arch::asm!("csrr {}, scause", out(reg) scause);
+        core::arch::asm!("csrr {}, stval", out(reg) stval);
     }
     let interrupt = scause >> 31;
     let exception_code = scause & 0x8f_ff_ff_ff;
@@ -30,7 +32,7 @@ pub extern "C" fn trap_handler() -> ! {
                 panic!("Reserved Exception Code")
             },
             _ => {
-                //Platform use
+                // Custom use
             }
         }
     }
