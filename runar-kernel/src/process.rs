@@ -6,12 +6,12 @@ pub mod process_table;
 pub mod scheduler;
 
 
-pub struct ProcessManager {
-    processes: ProcessTable,
+pub struct ProcessManager<'a> {
+    processes: ProcessTable<'a>,
     scheduler: Scheduler,
     current_process: Option<ProcessId>,
 }
-impl ProcessManager {
+impl<'a> ProcessManager<'a> {
     /// Blocks the current process, until the given queue is triggered.
     pub fn block_current(&mut self, queue: WaitQueueId) {
         for process_option in self.processes.get_mut_entries() {

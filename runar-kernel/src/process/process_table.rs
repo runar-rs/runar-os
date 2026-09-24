@@ -2,17 +2,17 @@ use core::{f32::consts::E, fmt::Display, num::NonZero};
 
 use crate::arch::riscv64::context::CpuContext;
 
-pub struct ProcessTable {
-    entries: [Option<(ProcessId, ProcessTableEntry)>; 64]
+pub struct ProcessTable<'a> {
+    entries: [Option<(ProcessId, ProcessTableEntry<'a>)>; 64]
 }
-impl ProcessTable {
+impl<'a> ProcessTable<'a> {
     #[inline(always)]
     pub fn get_entries(&self) -> &[Option<(ProcessId, ProcessTableEntry)>; 64] {
         &self.entries
     }
 
     #[inline(always)]
-    pub fn get_mut_entries(&mut self) -> &mut [Option<(ProcessId, ProcessTableEntry)>; 64] {
+    pub fn get_mut_entries(&mut self) -> &mut [Option<(ProcessId, ProcessTableEntry<'a>)>; 64] {
         &mut self.entries
     }
 }
@@ -33,6 +33,7 @@ impl Display for ProcessId {
 pub enum ProcessState {
     /// The process is new and not yet fully initialized.
     New,
+    /// The process is currently not running, but is ready to be called.
     Ready,
     Running,
     Blocked,
@@ -59,13 +60,13 @@ pub enum ProcessStateError {
     NoWaitQueueSet,
 }
 
-pub struct ProcessTableEntry {
+pub struct ProcessTableEntry<'a> {
     /// Process ID
     pid: ProcessId,
     /// PID of the parent process
     parent_pid: Option<ProcessId>,
     /// CPU context of the process
-    context: CpuContext,
+    context: CpuContext<'a>,
 
     page_table: usize,
     stack_top: usize,
@@ -81,12 +82,13 @@ pub struct ProcessTableEntry {
     exit_code: Option<ExitCode>,
 }
 // Non mutable getters
-impl ProcessTableEntry {
+impl<'a> ProcessTableEntry<'a> {
+    /// Get the Process ID of the process.
     #[inline(always)]
     pub fn get_pid(&self) -> &ProcessId {
         &self.pid
     }
-
+    /// Get the Process ID of the parent of the process.
     #[inline(always)]
     pub fn get_parent_pid(&self) -> &Option<ProcessId> {
         &self.parent_pid
@@ -127,7 +129,7 @@ impl ProcessTableEntry {
         &self.exit_code
     }
 }
-impl ProcessTableEntry {
+impl<'a> ProcessTableEntry<'a> {
     /// Tries setting the process state to blocked.
     pub fn try_set_blocked(&mut self) -> Result<(), ProcessStateError> {
         if let Some(_) = self.blocked_on {
