@@ -1,7 +1,7 @@
 use crate::arch::riscv64::context::CpuContext;
 
 
-pub extern "C" fn trap_handler() {
+pub extern "C" fn trap_handler() -> ! {
     // Save the current Cpu Context
     let context = CpuContext::new();
 
@@ -91,4 +91,10 @@ pub extern "C" fn trap_handler() {
 
         }
     }
+    // Safe, if this function is only invoked if a trap is triggered.
+    // Returns from the trap.
+    unsafe {
+        context.set();
+        core::arch::asm!("sret", options(noreturn));
+    };
 }
