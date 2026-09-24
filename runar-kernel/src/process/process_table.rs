@@ -1,4 +1,4 @@
-use core::{f32::consts::E, num::NonZero};
+use core::{f32::consts::E, fmt::Display, num::NonZero};
 
 use crate::arch::riscv64::context::CpuContext;
 
@@ -21,6 +21,14 @@ pub struct ProcessId {
     id: NonZero<usize>,
 }
 
+impl Display for ProcessId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
+
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProcessState {
     /// The process is new and not yet fully initialized.
@@ -39,12 +47,16 @@ pub enum ExitCode {
     Error,
 }
 
+/// Errors that can occur when trying to change the process state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProcessStateError {
+    /// The process is already blocked
     AlreadyBlocked,
+    /// The process has already exited
     Exited,
     InvalidTransition,
-    NoBlockedOnDefined,
+    /// Switch to `Blocked` was unsuccessful, because no wait queue was set
+    NoWaitQueueSet,
 }
 
 pub struct ProcessTableEntry {
@@ -66,7 +78,7 @@ pub struct ProcessTableEntry {
 
     state: ProcessState,
     blocked_on: Option<WaitQueueId>,
-    exit_code: ExitCode,
+    exit_code: Option<ExitCode>,
 }
 // Non mutable getters
 impl ProcessTableEntry {
@@ -109,6 +121,11 @@ impl ProcessTableEntry {
     pub fn get_cpu_time(&self) -> &usize {
         &self.cpu_time
     }
+
+    #[inline(always)]
+    pub fn get_exit_code(&self) -> &Option<ExitCode> {
+        &self.exit_code
+    }
 }
 impl ProcessTableEntry {
     /// Tries setting the process state to blocked.
@@ -119,9 +136,27 @@ impl ProcessTableEntry {
         }
         else {
             // No blocked_on set.
-            Err(ProcessStateError::NoBlockedOnDefined)
+            Err(ProcessStateError::NoWaitQueueSet)
         }
     }
+
+    /// Tries setting the wait queue id the process is waiting for.
+    pub fn try_set_blocked_on(&mut self, wait_queue_id: Option<WaitQueueId>) -> Result<(),WaitQueueError> {
+        if self.blocked_on == None {
+            self.blocked_on = wait_queue_id;
+            Ok(())
+        }
+        else {
+            // A wait queue is already set. Overwriting it would result in a loss of the previous block
+            Err(WaitQueueError::WaitQueueAlreadySet)
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WaitQueueError {
+    /// The wait 
+    WaitQueueAlreadySet
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
