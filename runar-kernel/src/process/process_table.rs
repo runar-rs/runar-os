@@ -6,6 +6,13 @@ pub struct ProcessTable<'a> {
     entries: [Option<(ProcessId, ProcessTableEntry<'a>)>; 64]
 }
 impl<'a> ProcessTable<'a> {
+    /// Creates an empty process table.
+    pub const fn new() -> Self {
+        Self {
+            entries: [const { None }; 64],
+        }
+    }
+
     #[inline(always)]
     pub fn get_entries(&self) -> &[Option<(ProcessId, ProcessTableEntry)>; 64] {
         &self.entries
@@ -77,6 +84,7 @@ pub struct ProcessTableEntry<'a> {
     /// Current CPU Time
     cpu_time: usize,
 
+    /// The state of the process
     state: ProcessState,
     blocked_on: Option<WaitQueueId>,
     exit_code: Option<ExitCode>,
@@ -95,7 +103,7 @@ impl<'a> ProcessTableEntry<'a> {
     }
 
     #[inline(always)]
-    pub fn get_context(&self) -> &CpuContext {
+    pub fn get_context(&self) -> &CpuContext<'a> {
         &self.context
     }
 
@@ -151,6 +159,17 @@ impl<'a> ProcessTableEntry<'a> {
         else {
             // A wait queue is already set. Overwriting it would result in a loss of the previous block
             Err(WaitQueueError::WaitQueueAlreadySet)
+        }
+    }
+
+    /// Tries setting the process state to ready.
+    pub fn try_set_ready(&mut self) -> Result<(), ProcessStateError> {
+        if self.state != ProcessState::Blocked && self.state != ProcessState::Exited { 
+            self.state = ProcessState::Ready;
+            Ok(())
+        }
+        else {
+            Err(ProcessStateError::InvalidTransition)
         }
     }
 }

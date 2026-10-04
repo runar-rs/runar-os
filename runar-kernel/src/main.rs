@@ -9,7 +9,9 @@ pub mod bootinfo;
 pub mod arch;
 pub mod memory;
 pub mod process;
+pub mod sync;
 pub mod trap;
+
 
 /// Start of the kernel. Should be only called on the primary hart, hart 0.
 #[unsafe(no_mangle)]

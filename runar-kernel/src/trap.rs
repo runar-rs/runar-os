@@ -1,5 +1,32 @@
-use crate::arch::riscv64::context::CpuContext;
+use crate::{arch::riscv64::context::CpuContext, process::PROCESS_MANAGER};
 
+#[repr(usize)]
+pub enum Syscall {
+    /// Exit the current process
+    Exit,
+    /// Yield the current process.
+    /// 
+    /// Voluntarily returns execution to the operating system.
+    Yield,
+    /// Let the current process sleep
+    Sleep,
+
+}
+
+impl TryFrom<usize> for Syscall {
+    type Error = ();
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            _ => Err(())
+        }
+    }
+}
+impl Into<usize> for Syscall {
+    fn into(self) -> usize {
+        self as usize
+    }
+}
 
 pub extern "C" fn trap_handler() -> ! {
     // Save the current Cpu Context
@@ -65,6 +92,20 @@ pub extern "C" fn trap_handler() -> ! {
             },
             8 => {
                 // Environment call from U-mode
+
+                // Allow unused variables as not all syscalls have yet been implemented
+                #[allow(unused_variables)]
+                let [a0, a1, a2, a3, a4, a5, a6, a7] = context.get_mut_a_reg();
+                if let Ok(syscall) = Syscall::try_from(*a7) {
+                    match syscall {
+                        Syscall::Exit => todo!(),
+                        Syscall::Yield => {
+                            let mut process_manager = PROCESS_MANAGER.lock();
+                            process_manager.yield_current();
+                        },
+                        Syscall::Sleep => todo!(),
+                    }
+                }
             },
             9 => {
                 // Environment call from S-mode

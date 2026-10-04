@@ -71,8 +71,8 @@ impl<'a> CpuContext<'a> {
     /// Creates a new `CpuContext`. Must be the first function called after entering a trap, to save
     /// the state of the cpu in order to be able to return
     #[inline(always)]
-    pub fn new() -> &'a Self {
-        let context: &'a Self;
+    pub fn new() -> &'a mut Self {
+        let context: &'a mut Self;
         let sp: usize;
         unsafe {
             core::arch::asm!(
@@ -112,10 +112,12 @@ impl<'a> CpuContext<'a> {
                 "sd t0, 248(sp)"
             );
             core::arch::asm!("mv {}, sp", out(reg) sp);
-            context = &*(sp as *const Self);
+            context = &mut *(sp as *mut Self);
         }
         context
     }
+    /// Sets the registers to the context.
+    #[inline(always)]
     pub unsafe fn set(&self) {
         unsafe {
             // Set Stack Pointer
@@ -157,5 +159,23 @@ impl<'a> CpuContext<'a> {
                 "addi sp, sp, 256",
             )
         }
+    }
+
+    ///
+    /// 
+    /// Returns an array with the form
+    /// `[a0, a1, a2, a3, a4, a5, a6, a7]`
+    #[inline(always)]
+    pub fn get_mut_a_reg(&mut self) -> [&mut usize; 8] {
+        [
+            &mut self.a0,
+            &mut self.a1,
+            &mut self.a2,
+            &mut self.a3,
+            &mut self.a4,
+            &mut self.a5,
+            &mut self.a6,
+            &mut self.a7,
+        ]
     }
 }
