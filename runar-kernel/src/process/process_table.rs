@@ -3,18 +3,20 @@ use core::{f32::consts::E, fmt::Display, num::NonZero};
 use crate::arch::riscv64::context::CpuContext;
 
 pub struct ProcessTable<'a> {
-    entries: [Option<(ProcessId, ProcessTableEntry<'a>)>; 64]
+    entries: [Option<(ProcessId, ProcessTableEntry<'a>)>; 64],
+    next: Option<&'a ProcessTable<'a>>,
 }
 impl<'a> ProcessTable<'a> {
     /// Creates an empty process table.
     pub const fn new() -> Self {
         Self {
             entries: [const { None }; 64],
+            next: None,
         }
     }
 
     #[inline(always)]
-    pub fn get_entries(&self) -> &[Option<(ProcessId, ProcessTableEntry)>; 64] {
+    pub fn get_entries(&self) -> &[Option<(ProcessId, ProcessTableEntry<'a>)>; 64] {
         &self.entries
     }
 
@@ -40,10 +42,13 @@ impl Display for ProcessId {
 pub enum ProcessState {
     /// The process is new and not yet fully initialized.
     New,
-    /// The process is currently not running, but is ready to be called.
+    /// The process is currently not running, but is ready to be run.
     Ready,
+    /// The process is running
     Running,
+    /// The process is blocked
     Blocked,
+    /// The process is sleeping
     Sleeping,
     Zombie,
     Exited,

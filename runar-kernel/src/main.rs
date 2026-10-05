@@ -7,7 +7,9 @@ use crate::{bootinfo::BootInfo, trap::trap_handler};
 pub mod bootinfo;
 
 pub mod arch;
+pub mod device;
 pub mod memory;
+pub mod net;
 pub mod process;
 pub mod sync;
 pub mod trap;

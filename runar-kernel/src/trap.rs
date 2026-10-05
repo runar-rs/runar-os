@@ -11,6 +11,11 @@ pub enum Syscall {
     /// Let the current process sleep
     Sleep,
 
+    /// Spawns a new process.
+    Spawn,
+
+    /// Clones the current process.
+    Clone,
 }
 
 impl TryFrom<usize> for Syscall {
@@ -104,6 +109,7 @@ pub extern "C" fn trap_handler() -> ! {
                             process_manager.yield_current();
                         },
                         Syscall::Sleep => todo!(),
+                        _ => todo!(),
                     }
                 }
             },
@@ -134,7 +140,7 @@ pub extern "C" fn trap_handler() -> ! {
 
         }
     }
-    // Safe, if this function is only invoked if a trap is triggered.
+    // Safe, if this function is invoked if a trap is triggered.
     // Returns from the trap.
     unsafe {
         context.set();

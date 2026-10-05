@@ -56,8 +56,7 @@ impl ProcessManager<'static> {
 
 /// The kernel-wide process manager. Acquire its lock before accessing manager state.
 ///
-/// `current_process` is currently a single-hart field; this manager must be
-/// updated to track the running process per hart before enabling SMP scheduling.
+///
 pub static PROCESS_MANAGER: SpinMutex<ProcessManager<'static>> = SpinMutex::new(ProcessManager::new());
 
 impl<'a> ProcessManager<'a> {
@@ -107,6 +106,12 @@ impl<'a> ProcessManager<'a> {
                 if let Some((pid, process_page)) = process_option {
                     if pid == current_harts_pid {
                         // TODO try_set_ready()
+                        match process_page.try_set_ready() {
+                            Ok(_) => {},
+                            Err(err) => {
+                                // Something went wrong
+                            }
+                        }
                     }
                 }
             }
