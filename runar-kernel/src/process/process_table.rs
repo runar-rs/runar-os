@@ -80,6 +80,7 @@ pub struct ProcessTableEntry<'a> {
     /// CPU context of the process
     context: CpuContext<'a>,
 
+    /// Pointer to the root page table of the process.
     page_table: usize,
     stack_top: usize,
     stack_size: usize,

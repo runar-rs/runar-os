@@ -150,6 +150,7 @@ unsafe impl core::alloc::GlobalAlloc for FreeListAllocator {
             core::ptr::null_mut()
         }
     }
+    
     unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout) {
         let mut current_node_addr = self.first_node;
         if current_node_addr != 0 {

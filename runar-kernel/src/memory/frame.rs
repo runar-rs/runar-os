@@ -1,4 +1,4 @@
-use crate::memory::address::PhysAddr;
+use crate::memory::address::Sv32PhysAddr;
 
 #[derive(Clone, Copy)]
 pub struct PhysFrame {
@@ -6,7 +6,7 @@ pub struct PhysFrame {
 }
 
 impl PhysFrame {
-    pub fn start_address(self) -> PhysAddr {
-        PhysAddr(self.number * 4096)
+    pub fn start_address(self) -> Sv32PhysAddr {
+        Sv32PhysAddr(self.number * 4096)
     }
 }

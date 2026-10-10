@@ -4,7 +4,7 @@ pub mod frame;
 pub mod page;
 pub mod region;
 
-static mut ROOT_PAGE_TABLE: page::PageTable = page::PageTable::new();
+static mut ROOT_PAGE_TABLE: page::Sv32PageTable = page::Sv32PageTable::new();
 
 /// Initialize the system memory.
 pub fn init() {
