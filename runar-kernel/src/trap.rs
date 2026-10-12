@@ -16,6 +16,9 @@ pub enum Syscall {
 
     /// Clones the current process.
     Clone,
+
+    /// Trigger the process watchdog timer
+    TriggerWDC
 }
 
 impl TryFrom<usize> for Syscall {

@@ -38,7 +38,14 @@ impl Display for ProcessId {
 
 /// Refers to a Page Table.
 pub enum PageTableRef<'a> {
-    Sv32(&'a Sv32PageTable)
+    /// Page table in Sv32 systems
+    Sv32(&'a Sv32PageTable),
+    /// Page table in Sv39 systems
+    Sv39,
+    /// Page table in Sv48 systems
+    Sv48,
+    /// Page table in Sv57 systems
+    Sv57,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,7 +60,9 @@ pub enum ProcessState {
     Blocked,
     /// The process is sleeping
     Sleeping,
+    /// The process hasn't triggered the watchdog timer.
     Zombie,
+    /// The process has exited.
     Exited,
 }
 
@@ -88,6 +97,7 @@ pub enum ProcessStateError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ProcessPriority(u8);
 
+/// Entry in the process table. Each process is represented by its individual [ProcessTableEntry]
 pub struct ProcessTableEntry<'a> {
     /// Process ID
     pid: ProcessId,
@@ -173,11 +183,13 @@ impl<'a> ProcessTableEntry<'a> {
         &self.cpu_time
     }
 
+    /// Get the exit code of the process.
     #[inline(always)]
     pub fn get_exit_code(&self) -> &Option<ExitCode<'a>> {
         &self.exit_code
     }
 }
+
 impl<'a> ProcessTableEntry<'a> {
     /// Tries setting the process state to blocked.
     pub fn try_set_blocked(&mut self) -> Result<(), ProcessStateError> {
@@ -221,6 +233,7 @@ pub enum WaitQueueError {
     WaitQueueAlreadySet
 }
 
+/// Zero-cost wrapper for wait queue ids.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct WaitQueueId {
     id: NonZero<usize>,
