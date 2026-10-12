@@ -1,6 +1,6 @@
 use core::{f32::consts::E, fmt::Display, num::NonZero};
 
-use crate::arch::riscv64::context::CpuContext;
+use crate::{arch::riscv64::context::CpuContext, memory::page::Sv32PageTable};
 
 pub struct ProcessTable<'a> {
     entries: [Option<(ProcessId, ProcessTableEntry<'a>)>; 64],
@@ -36,7 +36,10 @@ impl Display for ProcessId {
     }
 }
 
-
+/// Refers to a Page Table.
+pub enum PageTableRef<'a> {
+    Sv32(&'a Sv32PageTable)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProcessState {
@@ -55,9 +58,17 @@ pub enum ProcessState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExitCode {
+pub enum ExitCode<'a> {
+    /// The process exited successfully.
     Success,
-    Error,
+    /// The process exited unsuccessfully.
+    Error(ErrorCode<'a>),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ErrorCode<'a> {
+    /// The process tried accessing memory without the required rights.
+    SegmentationFault(&'a usize),
 }
 
 /// Errors that can occur when trying to change the process state.
@@ -67,33 +78,50 @@ pub enum ProcessStateError {
     AlreadyBlocked,
     /// The process has already exited
     Exited,
+    /// Invalid transition without a specific error message.
     InvalidTransition,
     /// Switch to `Blocked` was unsuccessful, because no wait queue was set
     NoWaitQueueSet,
 }
+
+/// Priority of the process.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ProcessPriority(u8);
 
 pub struct ProcessTableEntry<'a> {
     /// Process ID
     pid: ProcessId,
     /// PID of the parent process
     parent_pid: Option<ProcessId>,
-    /// CPU context of the process
+    /// CPU context of the process.
+    /// 
+    /// The CPU context contains the state
     context: CpuContext<'a>,
 
     /// Pointer to the root page table of the process.
-    page_table: usize,
+    page_table: PageTableRef<'a>,
+    /// Pointer to the top of the stack.
     stack_top: usize,
+    /// Size of the stack.
     stack_size: usize,
 
-    /// Priority of the process
-    priority: u8,
-    /// Current CPU Time
+    /// Priority of the process.
+    priority: ProcessPriority,
+    /// Current CPU Time.
+    /// 
+    /// Computational time, the process
     cpu_time: usize,
 
     /// The state of the process
     state: ProcessState,
+    /// The wait queue
     blocked_on: Option<WaitQueueId>,
-    exit_code: Option<ExitCode>,
+    /// Exit code of the process.
+    /// 
+    /// Some if the process has exited.
+    /// 
+    /// None if the process is still running.
+    exit_code: Option<ExitCode<'a>>,
 }
 // Non mutable getters
 impl<'a> ProcessTableEntry<'a> {
@@ -102,44 +130,51 @@ impl<'a> ProcessTableEntry<'a> {
     pub fn get_pid(&self) -> &ProcessId {
         &self.pid
     }
+
     /// Get the Process ID of the parent of the process.
     #[inline(always)]
     pub fn get_parent_pid(&self) -> &Option<ProcessId> {
         &self.parent_pid
     }
 
+    /// Get the CPU context
     #[inline(always)]
     pub fn get_context(&self) -> &CpuContext<'a> {
         &self.context
     }
 
+    /// Get a reference to the page table.
     #[inline(always)]
-    pub fn get_page_table(&self) -> &usize {
+    pub fn get_page_table(&self) -> &PageTableRef<'a> {
         &self.page_table
     }
 
+    /// Get the pointer to the top of the stack of the process.
     #[inline(always)]
     pub fn get_stack_top(&self) -> &usize {
         &self.stack_top
     }
 
+    /// Get the size of the stack of the process
     #[inline(always)]
     pub fn get_stack_size(&self) -> &usize {
         &self.stack_size
     }
 
+    /// Get the priority of the process
     #[inline(always)]
-    pub fn get_priority(&self) -> &u8 {
+    pub fn get_priority(&self) -> &ProcessPriority {
         &self.priority
     }
 
+    /// Get the current cpu time of the process.
     #[inline(always)]
     pub fn get_cpu_time(&self) -> &usize {
         &self.cpu_time
     }
 
     #[inline(always)]
-    pub fn get_exit_code(&self) -> &Option<ExitCode> {
+    pub fn get_exit_code(&self) -> &Option<ExitCode<'a>> {
         &self.exit_code
     }
 }

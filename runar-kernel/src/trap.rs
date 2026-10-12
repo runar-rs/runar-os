@@ -36,10 +36,11 @@ impl Into<usize> for Syscall {
 pub extern "C" fn trap_handler() -> ! {
     // Save the current Cpu Context
     let context = CpuContext::new();
-
+    let satp: usize;
     let scause: usize;
     let stval: usize;
     unsafe {
+        core::arch::asm!("cssr {}, satp", out(reg) satp);
         core::arch::asm!("csrr {}, scause", out(reg) scause);
         core::arch::asm!("csrr {}, stval", out(reg) stval);
     }
@@ -144,6 +145,9 @@ pub extern "C" fn trap_handler() -> ! {
     // Returns from the trap.
     unsafe {
         context.set();
+        // Set satp
+        core::arch::asm!("csrw satp, {0}", "sfence.vma x0, x0", in(reg) satp, options(nostack));
+        // Return
         core::arch::asm!("sret", options(noreturn));
     };
 }
