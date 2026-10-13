@@ -1,32 +1,51 @@
-use crate::{arch::riscv64::context::CpuContext, process::PROCESS_MANAGER};
+use crate::{arch::riscv64::context::CpuContext, process::{PROCESS_MANAGER, process_table::ExitCode}};
+
+pub enum SyscallError {
+    /// Casting from usize to the syscall enum failed.
+    InvalidSyscall,
+}
 
 #[repr(usize)]
 pub enum Syscall {
     /// Exit the current process
     Exit,
+    
     /// Yield the current process.
     /// 
     /// Voluntarily returns execution to the operating system.
     Yield,
+    
     /// Let the current process sleep
     Sleep,
 
-    /// Spawns a new process.
+    /// Spawn a new process.
     Spawn,
 
-    /// Clones the current process.
+    /// Clone the current process.
     Clone,
 
-    /// Trigger the process watchdog timer
-    TriggerWDC
+    /// Start the process watchdog timer.
+    StartWDC,
+
+    /// Stop the process watchdog timer.
+    StopWDC,
+    
+    /// Trigger the process watchdog timer.
+    /// 
+    /// This resets the watchdog timer. If the process watchdog timer is stopped when this syscall
+    /// is triggered, it will be restarted.
+    TriggerWDC,
+
+    /// Set the process watchdog timer timeout.
+    SetWDCTimeout,
 }
 
 impl TryFrom<usize> for Syscall {
-    type Error = ();
+    type Error = SyscallError;
 
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         match value {
-            _ => Err(())
+            _ => Err(SyscallError::InvalidSyscall)
         }
     }
 }
@@ -36,7 +55,11 @@ impl Into<usize> for Syscall {
     }
 }
 
-pub extern "C" fn trap_handler() -> ! {
+/// Trap handler
+/// 
+/// # Safety
+/// Safe if only invoked via stvec if a trap is triggered.
+pub unsafe extern "C" fn trap_handler() -> ! {
     // Save the current Cpu Context
     let context = CpuContext::new();
     let satp: usize;
@@ -107,7 +130,11 @@ pub extern "C" fn trap_handler() -> ! {
                 let [a0, a1, a2, a3, a4, a5, a6, a7] = context.get_mut_a_reg();
                 if let Ok(syscall) = Syscall::try_from(*a7) {
                     match syscall {
-                        Syscall::Exit => todo!(),
+                        Syscall::Exit => {
+                            let exit_code = ExitCode::from(*a7);
+                            let mut process_manager = PROCESS_MANAGER.lock();
+                            process_manager.exit_current(exit_code);
+                        },
                         Syscall::Yield => {
                             let mut process_manager = PROCESS_MANAGER.lock();
                             process_manager.yield_current();

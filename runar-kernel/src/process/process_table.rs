@@ -74,6 +74,14 @@ pub enum ExitCode<'a> {
     Error(ErrorCode<'a>),
 }
 
+impl<'a> From<usize> for ExitCode<'a> {
+    fn from(value: usize) -> Self {
+        unsafe {
+            core::mem::transmute(value)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ErrorCode<'a> {
     /// The process tried accessing memory without the required rights.
@@ -224,6 +232,11 @@ impl<'a> ProcessTableEntry<'a> {
         else {
             Err(ProcessStateError::InvalidTransition)
         }
+    }
+
+    pub fn set_exited(&mut self, exit_code: ExitCode<'a>) {
+        self.state = ProcessState::Exited;
+        self.exit_code = Some(exit_code);
     }
 }
 

@@ -1,6 +1,6 @@
 use core::{num::NonZero, ops::{Index, IndexMut}};
 
-use crate::{ arch::{NUM_HARTS, riscv64::{HartNum, context::CpuContext, get_mapped_hart_num}}, process::{process_table::{ProcessId, ProcessTable, WaitQueueId}, scheduler::Scheduler}};
+use crate::{ arch::{NUM_HARTS, riscv64::{HartNum, context::CpuContext, get_mapped_hart_num}}, process::{process_table::{ExitCode, ProcessId, ProcessTable, WaitQueueId}, scheduler::Scheduler}};
 use crate::sync::SpinMutex;
 
 pub mod process_table;
@@ -118,6 +118,18 @@ impl<'a> ProcessManager<'a> {
         }
         else {
             // Shouldn't be reached, as this method should only be called when current process is set.
+        }
+    }
+
+    pub fn exit_current(&mut self, exit_code: ExitCode<'a>) {
+        if let Some(current_hart_pid) = self.current_process.get_current_harts_process() {
+            for process_option in self.processes.get_mut_entries() {
+                if let Some((pid, process_page)) = process_option {
+                    if pid == current_hart_pid {
+                        process_page.set_exited(exit_code);
+                    }
+                }
+            }
         }
     }
 }
