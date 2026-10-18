@@ -61,7 +61,7 @@ impl Page {
 #[derive(Clone, Copy)]
 pub struct Sv32PageTableEntry(u32);
 impl Sv32PageTableEntry {
-    pub const PRESENT: u32 = 1 << 0;
+    pub const VALID: u32 = 1 << 0;
     pub const READABLE: u32 = 1 << 1;
     pub const WRITABLE: u32 = 1 << 2;
     pub const EXECUTABLE: u32 = 1 << 3;
@@ -74,6 +74,7 @@ impl Sv32PageTableEntry {
     pub const fn empty() -> Self {
         Self(0)
     }
+    
     #[inline(always)]
     pub const fn new(ppn: u32, flags: u32) -> Self {
         // ppn = Physical Page Number

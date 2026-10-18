@@ -37,7 +37,9 @@ impl Index<HartNum> for HartProcessMap {
 }
 
 pub struct ProcessManager<'a> {
+    /// Processes managed by the `ProcessManager`.
     processes: ProcessTable<'a>,
+    /// Scheduler of the processes.
     scheduler: Scheduler,
     /// The current processes for each of the harts.
     current_process: HartProcessMap,
@@ -127,6 +129,18 @@ impl<'a> ProcessManager<'a> {
                 if let Some((pid, process_page)) = process_option {
                     if pid == current_hart_pid {
                         process_page.set_exited(exit_code);
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn reset_current_wdc(&mut self) {
+        if let Some(current_hart_pid) = self.current_process.get_current_harts_process() {
+            for process_option in self.processes.get_mut_entries() {
+                if let Some((pid, process_page)) = process_option {
+                    if pid == current_hart_pid {
+                        process_page.reset_wdc();
                     }
                 }
             }

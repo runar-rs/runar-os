@@ -24,6 +24,8 @@ pub enum Syscall {
     /// Clone the current process.
     Clone,
 
+    /// Notify a notify handle.
+    Notify,
     /// Start the process watchdog timer.
     StartWDC,
 
@@ -140,6 +142,11 @@ pub unsafe extern "C" fn trap_handler() -> ! {
                             process_manager.yield_current();
                         },
                         Syscall::Sleep => todo!(),
+
+                        Syscall::TriggerWDC => {
+                            let mut process_manager = PROCESS_MANAGER.lock();
+                            process_manager.reset_current_wdc();
+                        }
                         _ => todo!(),
                     }
                 }

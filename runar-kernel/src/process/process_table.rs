@@ -127,8 +127,15 @@ pub struct ProcessTableEntry<'a> {
     priority: ProcessPriority,
     /// Current CPU Time.
     /// 
-    /// Computational time, the process
+    /// Computational time, the process already has taken
     cpu_time: usize,
+
+    /// Determines, whether the watchdog timer of the process is active.
+    wdc_active: bool,
+    /// The CPU time at which the last reset of the process watch dog timer occurred.
+    wdc_reset_time: usize,
+    /// The CPU time, at which the process watchdog timer triggers.
+    wdc_limit: usize,
 
     /// The state of the process
     state: ProcessState,
@@ -237,6 +244,20 @@ impl<'a> ProcessTableEntry<'a> {
     pub fn set_exited(&mut self, exit_code: ExitCode<'a>) {
         self.state = ProcessState::Exited;
         self.exit_code = Some(exit_code);
+    }
+
+    /// Resets the process watch dog timer to the cpu time.
+    /// 
+    /// This requires the cpu time in the process table entry to be up to date.
+    pub fn reset_wdc(&mut self) {
+        self.wdc_reset_time = self.cpu_time;
+    }
+
+    /// Check if the watch dog timer has triggered. This function returns true, if the wdc is still
+    /// valid and false if the wdc has already triggered.
+    pub fn check_wdc(&self) -> bool {
+        let trigger_time = self.wdc_reset_time + self.wdc_limit;
+        trigger_time > self.cpu_time
     }
 }
 
